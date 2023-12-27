@@ -1,0 +1,30 @@
+extends ../../layouts/default.pug
+
+block main 
+    h1 Danh sach san pham
+
+    table.table.table-hover.table-sm 
+        thead 
+            tr 
+                th STT 
+                th Hình ảnh 
+                th Tiêu đề
+                th Giá
+                th Trạng thái 
+                th Hành động
+        tbody 
+            each item, index in products
+                tr 
+                    td #{index}
+                    td 
+                        img(src=item.thumbnail, alt="Sản phẩm 1" width="100px" height="auto")
+                    td #{item.title}
+                    td #{item.price}
+                    td 
+                        if(item.status == "active")
+                            a(href="#" class="badge badge-success") Hoạt động
+                        else 
+                           a(href="#" class="badge badge-danger") Dừng Hoạt động 
+                    td 
+                        button(class="btn btn-warning btn-sm") Sửa
+                        button(class="btn btn-danger btn-sm ml-1") Xóa  
