@@ -1,4 +1,5 @@
 const express = require('express')
+const methodOverride = require('method-override')
 
 require('dotenv').config()
 
@@ -20,6 +21,10 @@ app.set('view engine', 'pug');
 
 app.use(express.static('public'));
 
+// dùng cho phần change status, bằng phương thức PATCH
+// https://www.npmjs.com/package/method-override
+// override with POST having ?_method=PATCH
+app.use(methodOverride('_method'))
 
 //Variables
 app.locals.prefixAdmin = systemConfig.prefixAdmin;
