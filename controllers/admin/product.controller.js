@@ -1,4 +1,3 @@
-
 // [GET] /admin/products 
 const Product = require("../../models/product.model")
 
@@ -33,10 +32,18 @@ module.exports.index = async (req, res) => {
 
     const countProducts = await Product.countDocuments(find);
     const objectPagination = paginationHelper(initPagination,req.query,countProducts);
-    // end pagination 
+    // end pagination
+    // sort     
+    let sort={};
+    if(req.query.sortKey&&req.query.sortValue){
+        sort[req.query.sortKey] = req.query.sortValue;
+    }else{
+        sort.position = "desc"
+    }
+    // end sort 
     
     const products = await Product.find(find)
-        .sort({position: "desc"})
+        .sort(sort)
         .limit(objectPagination.limitItems)
         .skip(objectPagination.skip);
 
@@ -144,9 +151,9 @@ module.exports.createPost = async (req, res)=>{
     
 
     //sửa tên thumbnail
-    if(req.file && req.file.filename){
-        req.body.thumbnail = `/uploads/${ req.file.filename}`;
-    }
+    // if(req.file && req.file.filename){
+    //     req.body.thumbnail = `/uploads/${ req.file.filename}`;
+    // }
 
     //Lưu product vào bên trong CSDL
     const product = new Product(req.body);
