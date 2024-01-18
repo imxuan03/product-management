@@ -1,7 +1,8 @@
 // [GET] /admin/products 
 const Product = require("../../models/product.model")
-
+const createTree = require("../../helpers/createTree")
 const systemConfig = require("../../config/system")
+const ProductCategory = require("../../models/product-category.model")
 
 //hàm filterStatus từ helper 
 const filterStatusHelper = require("../../helpers/filterStatus")
@@ -17,37 +18,37 @@ module.exports.index = async (req, res) => {
         deleted: false
     };
 
-    if(req.query.status)
+    if (req.query.status)
         find.status = req.query.status;
 
-    if(req.query.keyword){
+    if (req.query.keyword) {
         find.title = objectSearch.regex;
     }
 
     // pagination (phân trang)
     let initPagination = {
         currentPage: 1,
-        limitItems:4
+        limitItems: 4
     }
 
     const countProducts = await Product.countDocuments(find);
-    const objectPagination = paginationHelper(initPagination,req.query,countProducts);
+    const objectPagination = paginationHelper(initPagination, req.query, countProducts);
     // end pagination
     // sort     
-    let sort={};
-    if(req.query.sortKey&&req.query.sortValue){
+    let sort = {};
+    if (req.query.sortKey && req.query.sortValue) {
         sort[req.query.sortKey] = req.query.sortValue;
-    }else{
+    } else {
         sort.position = "desc"
     }
     // end sort 
-    
+
     const products = await Product.find(find)
         .sort(sort)
         .limit(objectPagination.limitItems)
         .skip(objectPagination.skip);
 
-    res.render("admin/pages/products/index.pug",{
+    res.render("admin/pages/products/index.pug", {
         pageTitle: "Trang Danh Sách Sản Phẩm",
         products: products,
         filterStatus: filterStatus,
@@ -57,47 +58,47 @@ module.exports.index = async (req, res) => {
 }
 
 // [GET] /admin/products/change-status/:status/:id
-module.exports.changeStatus = async (req, res)=>{
+module.exports.changeStatus = async (req, res) => {
     const status = req.params.status;
     const id = req.params.id;
-    
-    await Product.updateOne({_id: id} , {status: status });
-    
+
+    await Product.updateOne({ _id: id }, { status: status });
+
 
     res.redirect("back");
 }
 
 // [GET] /admin/products/change-multi
-module.exports.changeMulti = async (req, res)=>{
+module.exports.changeMulti = async (req, res) => {
     //Cách viết 1 
     const type = req.body.type;
     const ids = req.body.ids.split(", ");
     //Cách viết 2
     // const  { type, ids} = req.body;
-    
+
     console.log(type);
     console.log(ids);
 
     switch (type) {
         case "active":
-        case "inactive":    
-            await Product.updateMany({_id:{$in: ids}}, {status: type})
+        case "inactive":
+            await Product.updateMany({ _id: { $in: ids } }, { status: type })
             req.flash('success', `Cập nhật trạng thái thành công ${ids.length} sản phẩm!`);
             break;
         case "delete-all":
-            await Product.updateMany({_id:{$in: ids}}, {
+            await Product.updateMany({ _id: { $in: ids } }, {
                 deleted: true,
                 deletedAt: new Date()
             })
             req.flash('success', `Xóa trạng thái thành công ${ids.length} sản phẩm!`);
             break;
         case "change-position":
-            for(const item of ids){
+            for (const item of ids) {
                 // console.log(item.split("-"));
                 const [id, position] = item.split("-");
                 // console.log(id);
                 // console.log(position);
-                await Product.updateOne({_id: id}, {position: position});
+                await Product.updateOne({ _id: id }, { position: position });
             }
             req.flash('success', `Thay đổi vị trí thành công ${ids.length} sản phẩm!`);
             break;
@@ -110,45 +111,54 @@ module.exports.changeMulti = async (req, res)=>{
 }
 
 // [DELETE] /admin/products/delete/:id
-module.exports.deleteItem = async (req, res)=>{
-   const id = req.params.id;
-   console.log(id);
+module.exports.deleteItem = async (req, res) => {
+    const id = req.params.id;
+    console.log(id);
 
-   //xóa vĩnh viễn
+    //xóa vĩnh viễn
     //await Product.deleteOne({_id: id});
     //xóa mềm
-    await Product.updateOne({_id: id}, {
-        deleted: true, 
+    await Product.updateOne({ _id: id }, {
+        deleted: true,
         deletedAt: new Date()
     });
     req.flash('success', `Xóa trạng thái thành công sản phẩm!`);
-   res.redirect("back");
+    res.redirect("back");
 
 }
 
 // [GET] /admin/products/create
-module.exports.create = async (req, res)=>{
+module.exports.create = async (req, res) => {
+
+    let find = {
+        deleted: false,
+    }
+
+    const records = await ProductCategory.find(find);
+
+    const newRecords = createTree(records);
 
     res.render("admin/pages/products/create", {
-        pageTitle: "Trang Tạo Mới Sản Phẩm"
+        pageTitle: "Trang Tạo Mới Sản Phẩm",
+        records: newRecords
     });
- 
- }
 
- // [POST] /admin/products/create
-module.exports.createPost = async (req, res)=>{
+}
+
+// [POST] /admin/products/create
+module.exports.createPost = async (req, res) => {
 
     req.body.price = parseInt(req.body.price);
     req.body.discountPercentage = parseInt(req.body.discountPercentage);
     req.body.stock = parseInt(req.body.stock);
 
-    if(req.body.position===""){
-        const countProducts =await Product.countDocuments();
-        req.body.position=countProducts+1;
-    }else{
+    if (req.body.position === "") {
+        const countProducts = await Product.countDocuments();
+        req.body.position = countProducts + 1;
+    } else {
         req.body.position = parseInt(req.body.position);
     }
-    
+
 
     //sửa tên thumbnail
     // if(req.file && req.file.filename){
@@ -160,61 +170,69 @@ module.exports.createPost = async (req, res)=>{
     await product.save();
 
     res.redirect(`/${systemConfig.prefixAdmin}/products`);
- }
- // [GET] /admin/products/edit
- module.exports.edit = async (req, res)=>{
+}
+// [GET] /admin/products/edit
+module.exports.edit = async (req, res) => {
     try {
         const id = req.params.id;
-        
+
         const product = await Product.findOne({
             _id: id,
             deleted: false
         })
-    
+
+        const records = await ProductCategory.find({
+            deleted: false
+        });
+
+        const newRecords = createTree(records);
+
+
         res.render("admin/pages/products/edit", {
             pageTitle: "Trang Chỉnh Sửa Sản Phẩm",
-            product: product
+            product: product,
+            records: newRecords
         });
-     
+
     } catch (error) {
         res.redirect(`/${systemConfig.prefixAdmin}/products`)
 
     }
- }
+}
 
-  // [PATCH] /admin/products/edit/:id
-  module.exports.editPatch = async (req, res)=>{
+// [PATCH] /admin/products/edit/:id
+module.exports.editPatch = async (req, res) => {
     const id = req.params.id;
     req.body.price = parseInt(req.body.price);
     req.body.discountPercentage = parseInt(req.body.discountPercentage);
     req.body.stock = parseInt(req.body.stock);
 
-    if(req.body.position===""){
-        const countProducts =await Product.countDocuments();
-        req.body.position=countProducts+1;
-    }else{
+    if (req.body.position === "") {
+        const countProducts = await Product.countDocuments();
+        req.body.position = countProducts + 1;
+    } else {
         req.body.position = parseInt(req.body.position);
     }
-    
+
 
     //sửa tên thumbnail
-    if(req.file && req.file.filename){
-        req.body.thumbnail = `/uploads/${ req.file.filename}`;
+    if (req.file && req.file.filename) {
+        req.body.thumbnail = `/uploads/${req.file.filename}`;
     }
 
-    await Product.updateOne({_id:id}, req.body);
+    await Product.updateOne({ _id: id }, req.body);
 
-    
+
     req.flash('success', `Cập nhật thành công sản phẩm!`);
     res.redirect("back");
- }
+}
 
-  // [GET] /admin/products/detail
-  module.exports.detail = async (req, res)=>{
-    
+// [GET] /admin/products/detail
+module.exports.detail = async (req, res) => {
+
     try {
         const id = req.params.id;
-    
+
         const product = await Product.findOne({
             _id: id,
             deleted: false
@@ -227,6 +245,6 @@ module.exports.createPost = async (req, res)=>{
     } catch (error) {
         res.redirect(`/${systemConfig.prefixAdmin}/products`)
     }
-    
- }
+
+}
 
