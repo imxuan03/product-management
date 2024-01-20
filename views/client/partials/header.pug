@@ -12,3 +12,13 @@ Header.header
                             a(href="/") Trang chủ  
                         li 
                             a(href="/products") Sản phẩm 
+                        if(user)
+                            li 
+                                a(href="/user/logout") Đăng xuất
+                        else
+                            li 
+                                a(href="/user/login") Đăng nhập
+                            li 
+                                a(href="/user/register") Đăng kí
+                        
+                
