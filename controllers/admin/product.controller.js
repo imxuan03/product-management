@@ -68,7 +68,7 @@ module.exports.changeStatus = async (req, res) => {
     res.redirect("back");
 }
 
-// [GET] /admin/products/change-multi
+// [PATCH] /admin/products/change-multi
 module.exports.changeMulti = async (req, res) => {
     //Cách viết 1 
     const type = req.body.type;
